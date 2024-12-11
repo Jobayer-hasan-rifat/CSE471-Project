@@ -1,69 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REMS</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f8ff;
-            color: #333;
-        }
+use App\Livewire\Forms\LoginForm;
+use Illuminate\Support\Facades\Session;
+use Livewire\Attributes\Layout;
+use Livewire\Volt\Component;
 
-        header {
-            background-color: #1e90ff;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-        }
+new #[Layout('layouts.guest')] class extends Component
+{
+    public LoginForm $form;
 
-        header h1 {
-            margin: 0;
-        }
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function login(): void
+    {
+        $this->validate();
 
-        main {
-            padding: 20px;
-            text-align: center;
-        }
+        $this->form->authenticate();
 
-        main p {
-            font-size: 18px;
-            line-height: 1.5;
-        }
+        Session::regenerate();
 
-        .login-btn {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            color: white;
-            background-color: #1e90ff;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            cursor: pointer;
-        }
+        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+    }
+}; ?>
 
-        .login-btn:hover {
-            background-color: #104e8b;
-        }
-    </style>
-</head>
+<div>
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
 
-<body>
-    <header>
-        <h1>REMS</h1>
-    </header>
-    <main>
-        <p>Welcome to the Resource and Event Management System (REMS). This platform allows university clubs and
-            organizations to seamlessly manage events, book venues, and communicate with the Office of Co-Curricular
-            Activities (OCA). Log in to access your personalized dashboard and get started.</p>
-        <a href="/livewire/forms/LoginForm.php" class="login-btn">Login</a>
-    </main>
-</body>
+    <form wire:submit="login">
+        <!-- User Type Dropdown -->
+        <div>
+            <x-input-label for="userType" :value="__('User  Type')" />
+            <select wire:model="form.userType" id="userType" class="block mt-1 w-full" required>
+                <option value="" disabled selected>Select your user type</option>
+                <option value="oca">OCA</option>
+                <option value="club">Club's Person</option>
+                <option value="admin">Admin</option>
+            </select>
+            <x-input-error :messages="$errors->get('form.userType')" class="mt-2" />
+        </div>
 
-</html>
+        <!-- Email Address -->
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
+        </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="current-password" />
+            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
+        </div>
+
+        <!-- Remember Me -->
+        <div class="block mt-4">
+            <label for="remember" class="inline-flex items-center">
+                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
+                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+            </label>
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            @if (Route::has('password.request'))
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}" wire:navigate>
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+
+            <x-primary-button class="ms-3">
+                {{ __('Log in') }}
+            </x-primary-button>
+        </div>
+    </form>
+</div>
