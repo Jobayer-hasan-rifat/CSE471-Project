@@ -1,71 +1,150 @@
-<?php
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REMS</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f7ff;
+        }
 
-use App\Livewire\Forms\LoginForm;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Layout;
-use Livewire\Volt\Component;
+        .container {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
 
-new #[Layout('layouts.guest')] class extends Component
-{
-    public LoginForm $form;
+        .logo {
+            color: #5b49d6;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
 
-    /**
-     * Handle an incoming authentication request.
-     */
-    public function login(): void
-    {
-        $this->validate();
+        .subtitle {
+            color: #666;
+            margin-bottom: 3rem;
+        }
 
-        $this->form->authenticate();
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
 
-        Session::regenerate();
+        .welcome-text {
+            color: #5b49d6;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
-    }
-}; ?>
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
 
-<div>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
 
-    <form wire:submit="login">
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .btn-signin {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #5b49d6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .btn-signin:hover {
+            background-color: #4a3ac4;
+        }
+
+        .help-text {
+            margin-top: 1rem;
+            color: #5b49d6;
+            text-decoration: none;
+        }
+
+        .help-text:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">REMS</div>
+        <div class="subtitle">Streamline your club management</div>
+        
+        <div class="login-card">
+            <div class="welcome-text">Welcome Back!</div>
+            
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+                <div class="form-group">
+                    <label>Select Your Organization</label>
+                    <select name="email" class="form-control" required>
+                        <option value="">Select organization</option>
+                        <option value="oca@bracu.ac.bd">OCA</option>
+                        <option value="bucc@bracu.ac.bd">BUCC</option>
+                        <option value="robu@bracu.ac.bd">ROBU</option>
+                        <option value="buedf@bracu.ac.bd">BUEDF</option>
+                        <option value="buac@bracu.ac.bd">BUAC</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn-signin">Sign In</button>
+            </form>
+
+            <a href="#" class="help-text">Need help?</a>
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
+        <div class="footer">
+            2024 REMS. All rights reserved.
         </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
-            </label>
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
-</div>
+    </div>
+</body>
+</html>
