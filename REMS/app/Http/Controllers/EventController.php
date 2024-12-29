@@ -1,0 +1,424 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Event;
+use App\Models\Club;
+use App\Models\Venue;
+use App\Models\EventDocument;
+use App\Notifications\EventApproved;
+use App\Notifications\EventRejected;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+
+class EventController extends Controller
+{
+    /**
+     * Display a listing of all events
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        
+        // If OCA, show all events
+        if ($user->role === 'oca') {
+            // Date range filter
+            $startDate = $request->input('start_date', now()->subMonth()->format('Y-m-d'));
+            $endDate = $request->input('end_date', now()->format('Y-m-d'));
+
+            $events = Event::with(['club', 'venue'])
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->orderBy('start_date', 'desc')
+                ->paginate(10);
+            
+            // Calculate statistics for reports
+            $stats = [
+                'total' => Event::count(),
+                'approved' => Event::where('status', 'approved')->count(),
+                'pending' => Event::where('status', 'pending')->count(),
+                'rejected' => Event::where('status', 'rejected')->count(),
+            ];
+            
+            // Get monthly statistics
+            $monthlyStats = Event::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), 
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+            
+            // Get venue usage statistics
+            $venueStats = Event::select('venues.name', DB::raw('COUNT(*) as count'))
+                ->join('venues', 'events.venue_id', '=', 'venues.id')
+                ->groupBy('venues.id', 'venues.name')
+                ->orderByDesc('count')
+                ->get();
+            
+            // Get recent events
+            $recentEvents = Event::with(['club', 'venue'])
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->orderByDesc('created_at')
+                ->take(10)
+                ->get();
+            
+            return view('reports.events', compact(
+                'events', 
+                'stats', 
+                'monthlyStats', 
+                'venueStats',
+                'recentEvents',
+                'startDate',
+                'endDate'
+            ));
+        }
+        
+        // If club, show only their events
+        $club = Club::where('email', $user->email)->first();
+        $events = Event::where('club_id', $club->id)
+            ->with(['venue'])
+            ->orderBy('start_date', 'desc')
+            ->paginate(10);
+        
+        return view('events.index', compact('events'));
+    }
+
+        /**
+     * Display a listing of pending events
+     */
+    public function pendingEvents()
+    {
+        $user = Auth::user();
+        
+        // If OCA, show all pending events
+        if ($user->role === 'oca') {
+            $events = Event::with(['club', 'venue'])
+                ->where('status', 'pending')
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+                
+            return view('events.pending', compact('events'));
+        }
+        
+        // If club, show only their pending events
+        $club = Club::where('email', $user->email)->first();
+        $events = Event::where('club_id', $club->id)
+            ->where('status', 'pending')
+            ->with(['venue'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        
+        return view('events.pending', compact('events'));
+    }
+
+    /**
+     * Display a listing of approved events
+     */
+    public function approvedEvents()
+    {
+        $user = Auth::user();
+        
+        // If OCA, show all approved events
+        if ($user->role === 'oca') {
+            $events = Event::with(['club', 'venue'])
+                ->where('status', 'approved')
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+                
+            return view('events.approved', compact('events'));
+        }
+        
+        // If club, show only their approved events
+        $club = Club::where('email', $user->email)->first();
+        $events = Event::where('club_id', $club->id)
+            ->where('status', 'approved')
+            ->with(['venue'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        
+        return view('events.approved', compact('events'));
+    }
+    /**
+     * Display event reports and statistics
+     */
+    public function reports(Request $request)
+    {
+        $startDate = Carbon::parse($request->get('start_date', now()->subMonth()));
+        $endDate = Carbon::parse($request->get('end_date', now()));
+
+        // Get basic statistics
+        $stats = Event::getStats();
+
+        // Get monthly statistics
+        $monthlyStats = Event::whereBetween('created_at', [$startDate, $endDate])
+            ->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('COUNT(*) as count'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Get venue usage statistics
+        $venueStats = Event::whereBetween('created_at', [$startDate, $endDate])
+            ->select('venues.name', DB::raw('COUNT(*) as count'))
+            ->join('venues', 'events.venue_id', '=', 'venues.id')
+            ->groupBy('venues.id', 'venues.name')
+            ->orderByDesc('count')
+            ->get();
+
+        // Get recent events
+        $recentEvents = Event::with(['club', 'venue'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        return view('reports.events', compact(
+            'stats',
+            'monthlyStats',
+            'venueStats',
+            'recentEvents'
+        ));
+    }
+
+    /**
+     * Show calendar view of events
+     */
+    public function calendar()
+    {
+        $venues = Venue::all();
+        $clubs = Club::all();
+
+        return view('events.calendar', compact('venues', 'clubs'));
+    }
+
+    /**
+     * Show the form for creating a new event
+     */
+    public function create()
+    {
+        $venues = Venue::all();
+        return view('events.create', compact('venues'));
+    }
+
+    /**
+     * Store a newly created event
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'venue_id' => 'required|exists:venues,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'budget' => 'required|numeric|min:0',
+            'expected_attendees' => 'required|integer|min:1',
+            'documents.*' => 'nullable|file|mimes:pdf,doc,docx|max:2048'
+        ]);
+
+        $event = Event::create([
+            'name' => $validated['name'],
+            'description' => $validated['description'],
+            'venue_id' => $validated['venue_id'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'budget' => $validated['budget'],
+            'expected_attendees' => $validated['expected_attendees'],
+            'club_id' => Auth::user()->club_id,
+            'status' => 'pending'
+        ]);
+
+        // Handle document uploads
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $document) {
+                $path = $document->store('event-documents');
+                EventDocument::create([
+                    'event_id' => $event->id,
+                    'file_path' => $path,
+                    'file_name' => $document->getClientOriginalName()
+                ]);
+            }
+        }
+
+        return redirect()->route('events.show', $event)->with('success', 'Event created successfully and pending approval.');
+    }
+
+    /**
+     * Display the specified event
+     */
+    public function show(Event $event)
+    {
+        $event->load(['club', 'venue', 'documents']);
+        return view('events.show', compact('event'));
+    }
+
+    /**
+     * Show the form for editing the specified event
+     */
+    public function edit(Event $event)
+    {
+        $this->authorize('update', $event);
+        $venues = Venue::all();
+        return view('events.edit', compact('event', 'venues'));
+    }
+
+    /**
+     * Update the specified event in storage
+     */
+    public function update(Request $request, Event $event)
+    {
+        $this->authorize('update', $event);
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'venue_id' => 'required|exists:venues,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'expected_attendance' => 'required|integer|min:1'
+        ]);
+
+        $event->update($request->all());
+        
+        return redirect()->route('events.show', $event)
+            ->with('success', 'Event updated successfully.');
+    }
+
+    /**
+     * Remove the specified event from storage
+     */
+    public function destroy(Event $event)
+    {
+        $this->authorize('delete', $event);
+        
+        foreach ($event->documents as $document) {
+            Storage::delete($document->path);
+            $document->delete();
+        }
+        
+        $event->delete();
+        
+        return redirect()->route('events.index')
+            ->with('success', 'Event deleted successfully.');
+    }
+
+    /**
+     * Upload documents for an event
+     */
+    public function uploadDocuments(Request $request, Event $event)
+    {
+        $request->validate([
+            'documents.*' => 'required|mimes:pdf,doc,docx|max:10240'
+        ]);
+
+        foreach ($request->file('documents') as $document) {
+            $path = $document->store('event-documents');
+            $event->documents()->create([
+                'path' => $path,
+                'name' => $document->getClientOriginalName()
+            ]);
+        }
+
+        return back()->with('success', 'Documents uploaded successfully.');
+    }
+
+    /**
+     * Show pending event approvals for OCA
+     */
+    public function pendingApprovals()
+    {
+        $events = Event::where('status', 'pending')
+            ->with(['club', 'venue'])
+            ->latest()
+            ->paginate(10);
+            
+        return view('events.pending', compact('events'));
+    }
+
+    /**
+     * Approve an event
+     */
+    public function approve(Event $event)
+    {
+        $event->update(['status' => 'approved']);
+        $event->club->notify(new EventApproved($event));
+
+        if(request()->ajax()) {
+            return response()->json(['message' => 'Event approved successfully']);
+        }
+        
+        return back()->with('success', 'Event has been approved.');
+    }
+
+    /**
+     * Reject an event
+     */
+    public function reject(Request $request, Event $event)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string'
+        ]);
+
+        $event->update([
+            'status' => 'rejected',
+            'rejection_reason' => $request->rejection_reason
+        ]);
+
+        $event->club->notify(new EventRejected($event));
+
+        if(request()->ajax()) {
+            return response()->json(['message' => 'Event rejected successfully']);
+        }
+        
+        return back()->with('success', 'Event has been rejected.');
+    }
+
+    /**
+     * Display a listing of pending events
+     */
+    public function pending()
+    {
+        $pendingEvents = Event::with(['club', 'venue'])
+            ->where('status', 'pending')
+            ->latest()
+            ->paginate(10);
+
+        if(request()->ajax()) {
+            return view('approval.index', compact('pendingEvents'))->render();
+        }
+
+        return view('approval.index', compact('pendingEvents'));
+    }
+
+    /**
+     * Approve an event
+     */
+    public function approveEvent($id)
+    {
+        $event = Event::findOrFail($id);
+        $event->update(['status' => 'approved']);
+
+        if(request()->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back()->with('success', 'Event approved successfully');
+    }
+
+    /**
+     * Reject an event
+     */
+    public function rejectEvent($id)
+    {
+        $event = Event::findOrFail($id);
+        $event->update(['status' => 'rejected']);
+
+        if(request()->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back()->with('success', 'Event rejected successfully');
+    }
+}
