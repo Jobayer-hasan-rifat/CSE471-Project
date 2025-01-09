@@ -1,66 +1,133 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# REMS - Reservation and Event Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## About REMS
 
-## About Laravel
+REMS (Reservation and Event Management System) is a comprehensive web-based solution designed specifically for BRAC University's Office of Co-curricular Activities (OCA) to efficiently manage club activities, events, and reservations. This system streamlines the communication and management processes between OCA, clubs, and administrative staff.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### User Roles
+1. **OCA (Office of Co-curricular Activities)**
+   - Manage all club activities
+   - Review and approve event requests
+   - Handle budget allocations
+   - Create announcements
+   - Process transactions
+   - Real-time chat with clubs
+   - Monitor club performances
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+2. **Clubs**
+   - Create and manage events
+   - Access central calendar for event planning
+   - Submit fund requests
+   - Manage club information and profiles
+   - Communicate with OCA
+   - View venue availability
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+3. **Admin**
+   - Manage venue inventory (Auditorium, Theatre Room, etc.)
+   - Add new clubs to the system
+   - User management
+   - System configuration
 
-## Learning Laravel
+### Key Features
+- Centralized Event Calendar
+- Venue Management System
+  - Auditorium booking
+  - Theatre Room reservation
+  - Multipurpose Hall scheduling
+  - Club Room allocation
+- Budget Management
+- Real-time Chat Communication
+- Club Information Management
+- Event Request and Approval System
+- Announcement System
+- Transaction Processing
+- User Authentication and Authorization
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Benefits
+- Streamlined club management process
+- Efficient event scheduling and conflict prevention
+- Improved communication between OCA and clubs
+- Centralized budget tracking and management
+- Paperless transaction processing
+- Easy venue reservation system
+- Real-time updates and notifications
+- Transparent club activities monitoring
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Technologies Used
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Backend Framework
+- Laravel 10.x (PHP Framework)
+- MySQL Database
 
-## Laravel Sponsors
+### Frontend Technologies
+- HTML5
+- CSS3
+- JavaScript
+- Bootstrap 5
+- Blade Template Engine
+- jQuery
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Additional Tools & Libraries
+- Laravel Mix (Asset Compilation)
+- Laravel Sanctum (API Authentication)
+- Laravel Echo (Real-time Events)
+- Pusher (WebSocket Integration)
 
-### Premium Partners
+## Installation & Setup
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/REMS.git
+cd REMS
+```
 
-## Contributing
+2. Install PHP dependencies:
+```bash
+composer install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Install Node dependencies:
+```bash
+npm install
+```
 
-## Code of Conduct
+4. Create environment file:
+```bash
+cp .env.example .env
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+5. Generate application key:
+```bash
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+6. Configure your database in .env file:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database_name
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+7. Run database migrations:
+```bash
+php artisan migrate
+```
 
-## License
+8. Compile assets:
+```bash
+npm run dev
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+9. Start the development server:
+```bash
+php artisan serve
+```
+
+The application will be available at `http://localhost:8000`
+
+## Conclusion
+
+REMS is a tailored solution for BRAC University's OCA department that revolutionizes how club activities and events are managed. By providing a centralized platform for event management, venue booking, and club administration, it significantly reduces manual workload and improves efficiency. The system's role-based access control ensures secure and appropriate access to features, while its real-time communication capabilities enhance collaboration between OCA and clubs. This comprehensive solution helps maintain organized and efficient club operations within BRAC University.
